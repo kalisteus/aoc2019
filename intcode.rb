@@ -23,6 +23,16 @@ def runIntcode(program,  inputs = [], userInputEnabled = true)
     end
   end
 
+  def getAddress(program, rb, mode, param)
+    if mode === 0
+      return param
+    elsif mode === 1
+      return param
+    elsif mode === 2
+      return rb + param
+    end
+  end
+
   # Outputs
   outputs = []
   # Input Index
@@ -58,6 +68,9 @@ def runIntcode(program,  inputs = [], userInputEnabled = true)
     value1 = getValue(program, rb, opcode_mode_array[1], param1) if !param1.nil?
     value2 = getValue(program, rb, opcode_mode_array[2], param2) if !param2.nil?
     value3 = getValue(program, rb, opcode_mode_array[3], param3) if !param3.nil?
+    address1 = getAddress(program, rb, opcode_mode_array[1], param1) if !param1.nil?
+    address2 = getAddress(program, rb, opcode_mode_array[2], param2) if !param2.nil?
+    address3 = getAddress(program, rb, opcode_mode_array[3], param3) if !param3.nil?
 
     ip_inc = nil
     case opcode
@@ -70,7 +83,7 @@ def runIntcode(program,  inputs = [], userInputEnabled = true)
       end
 
       # Write the result
-      program[param3] = result
+      program[address3] = result
 
       # Determine ip increment
       ip_inc = 4
@@ -78,15 +91,15 @@ def runIntcode(program,  inputs = [], userInputEnabled = true)
       input = inputs[ii]
       input = outputs.last if !userInputEnabled
       input = gets.to_i if input.nil? && userInputEnabled
+
       # Write the result
-      program[param1] = input
+      program[address3] = input
 
       # Determine ip increment
       ip_inc = 2
       ii += 1
     when 4
       # Output the parameter value
-      p "Program output: " << value1.to_s
       outputs << value1
 
       # Determine ip increment
@@ -105,16 +118,16 @@ def runIntcode(program,  inputs = [], userInputEnabled = true)
       ip_inc = 3
     when 7
       if value1 < value2 then
-        program[param3] = 1
+        program[address3] = 1
       else
-        program[param3] = 0
+        program[address3] = 0
       end
       ip_inc = 4
     when 8
       if value1 == value2 then
-        program[param3] = 1
+        program[address3] = 1
       else
-        program[param3] = 0
+        program[address3] = 0
       end
       ip_inc = 4
     when 9
