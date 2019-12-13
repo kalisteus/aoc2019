@@ -1,4 +1,4 @@
-require_relative 'intcode'
+require_relative 'intcode_class'
 
 INPUT_PATH = File.expand_path('./input/day13.txt', __dir__)
 program = File.read(INPUT_PATH).split(',')
@@ -8,8 +8,10 @@ program.map!{|e| e.to_i}
 memory = []
 4096.times.each{|i| memory << 0}
 
-result = runIntcode(program.concat(memory))
-output = result[1]
+intcode = Intcode.new(program.concat(memory))
+intcode.run
+output = intcode.get_output
+p output
 
 instructions = []
 i = 0
