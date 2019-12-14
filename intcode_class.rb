@@ -1,9 +1,15 @@
 class Intcode
-  def initialize(program, input = [], interactive = true)
-    @programState = program
+  def initialize(program, memory_size = 0, interactive = true)
+    @debug = false
+
+    memory = []
+    memory_size.times.each{|i| memory << 0}
+
+    @programState = program.concat(memory)
     @interactive = interactive
 
-    @input = input
+    @output = []
+    @input = []
     # Input Iterator
     @ii = 0
 
@@ -12,33 +18,33 @@ class Intcode
     # Relative Base
     @rb = 0
 
-    @output = []
-
     @opcode
     @params = []
     @values = []
-    @addresses = []
+    @addr = []
 
     @return_program = false
+    @waiting_for_input = false
   end
 
   def add_input(value)
-    @inputs << value
+    @input.concat(value) if value.is_a?(Array)
+    @input << value if !value.is_a?(Array)
   end
 
   def get_output
-    @output
+    [@opcode, @output]
   end
 
   def flush_output
     output = @output
     @output = []
-    output
+    return [@opcode, output]
   end
 
   def run()
     while !@return_program
-      read_next_operation
+      read_next_operation if !@waiting_for_input
 
       case @opcode
       when 1..2 # ADD || MULTIPLY
@@ -49,15 +55,18 @@ class Intcode
           result = @values[0] * @values[1]
         end
         # Write the result
-        write_value(@addresses[2], result)
+        write_value(@addr[2], result)
         # Increment Instruction Pointer
         adjust_ip(4)
       when 3 #INPUT
         input = get_input
-        # Write the result
-        write_value(@addresses[2], input)
-        # Increment Instruction Pointer
-        adjust_ip(2)
+        # We might be missing input, so don't continue the program
+        if !@return_program then
+          # Write the result
+          write_value(@addr[2], input)
+          # Increment Instruction Pointer
+          adjust_ip(2)
+        end
       when 4 #OUTPUT
         # Write parameter value to the output
         @output << @values[0]
@@ -77,16 +86,16 @@ class Intcode
         end
       when 7
         if @values[0] < @values[1] then
-          write_value(@addresses[2], 1)
+          write_value(@addr[2], 1)
         else
-          write_value(@addresses[2], 0)
+          write_value(@addr[2], 0)
         end
         adjust_ip(4)
       when 8
         if @values[0] == @values[1] then
-          write_value(@addresses[2], 1)
+          write_value(@addr[2], 1)
         else
-          write_value(@addresses[2], 0)
+          write_value(@addr[2], 0)
         end
         adjust_ip(4)
       when 9
@@ -94,10 +103,8 @@ class Intcode
         adjust_ip(2)
       when 99
         @return_program = true
-        break
       else
         @return_program = true
-        break
       end
     end
     @return_program = false
@@ -145,13 +152,18 @@ class Intcode
     @params << @programState[@ip+2]
     @params << @programState[@ip+3]
     @values = Array.new(3, nil)
-    @values << get_value(opcode_mode_array[1], @params[0]) if !@params[0].nil?
-    @values << get_value(opcode_mode_array[2], @params[1]) if !@params[1].nil?
-    @values << get_value(opcode_mode_array[3], @params[2]) if !@params[2].nil?
-    @addresses = Array.new(3, nil)
-    @addresses << get_address(opcode_mode_array[1], @params[0]) if !@params[0].nil?
-    @addresses << get_address(opcode_mode_array[2], @params[1]) if !@params[1].nil?
-    @addresses << get_address(opcode_mode_array[3], @params[2]) if !@params[2].nil?
+    @values[0] = get_value(opcode_mode_array[1], @params[0]) if !@params[0].nil?
+    @values[1] = get_value(opcode_mode_array[2], @params[1]) if !@params[1].nil?
+    @values[2] = get_value(opcode_mode_array[3], @params[2]) if !@params[2].nil?
+    @addr = Array.new(3, nil)
+    @addr[0] = get_address(opcode_mode_array[1], @params[0]) if !@params[0].nil?
+    @addr[1] = get_address(opcode_mode_array[2], @params[1]) if !@params[1].nil?
+    @addr[2] = get_address(opcode_mode_array[3], @params[2]) if !@params[2].nil?
+    p @programState[@ip] if @debug
+    p @params if @debug
+    p @values if @debug
+    p @addr if @debug
+    p '-----' if @debug
   end
 
   def adjust_ip(value, overwrite = false)
@@ -173,9 +185,9 @@ class Intcode
       input = @input[@ii]
       @ii += 1 if !input.nil?
       @return_program = input.nil?
+      @waiting_for_input = input.nil?
     else
-      input = @output.last
-      input = gets.to_i if input.nil? && @interactive
+      input = gets.to_i
     end
 
     input

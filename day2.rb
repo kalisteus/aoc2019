@@ -1,10 +1,12 @@
-require_relative 'intcode'
+require_relative 'intcode_class'
 
-program = File.read("day2.txt").split(',')
+INPUT_PATH = File.expand_path('./input/day2.txt', __dir__)
+program = File.read(INPUT_PATH).split(',')
 program.map!{|e| e.to_i}
-program[1] = 77
-program[2] = 5
-p program
 
-program = runIntcode(program)
-p program
+program[1] = 12
+program[2] = 2
+
+intcode = Intcode.new(program.clone, 0, true)
+intcode.run
+p intcode.flush_output

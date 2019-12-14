@@ -1,25 +1,27 @@
-require_relative 'intcode'
+require_relative 'intcode_class'
 
-clean_program = File.read("day2.txt").split(',')
-clean_program.map!{|e| e.to_i}
+INPUT_PATH = File.expand_path('./input/day2.txt', __dir__)
+program = File.read(INPUT_PATH).split(',')
+program.map!{|e| e.to_i}
 
 100.times do |i|
   100.times do |j|
     #Init
-    program = clean_program.clone
+    intcode = Intcode.new(program.clone, 0, true)
 
     # Set input values
     program[1] = i
     program[2] = j
 
-    program = runIntcode(program)
-    if (program[0] === 19690720)
+    intcode.run
+    result = intcode.flush_output
+    if (result[2][0] === 19690720)
       puts "verb"
-      p program[1]
+      p i
       puts "noun"
-      p program[2]
+      p j
       puts "answer"
-      p 100 * program[1] + program[2]
+      p 100 * i + j
 
       break 2
     end
